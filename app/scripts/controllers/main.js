@@ -267,8 +267,7 @@ angular.module('edExpectApp')
       $scope.sendSCM = function sendSCM(patient) {
           $http.patch($scope.baseURL + 'ExpectedPatients/' + $scope.openPatient.Id, $scope.openPatient)
             .then(function(response) {
-                  //window.external.WrapUp(JSON.stringify($scope.openPatient));
-                  window.external.WrapUp2($scope.openPatient.Id);
+                  window.external.WrapUp(JSON.stringify($scope.openPatient));
                 }, function errorCallback(response) {
                   alert("Error Sending to SCM, please try again.")
             });
