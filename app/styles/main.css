@@ -96,3 +96,4 @@ td {
 .nurse-report, .patient-information {width: 100%;}
 #NurseReport {width: 85%;}
 #patientInformation {width: 100%;}
+.calendar-input {min-width: 350px;}

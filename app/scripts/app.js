@@ -17,7 +17,8 @@ angular
     'ngSanitize',
     'ngTouch',
     'ngTagsInput',
-    'angucomplete-alt'
+    'angucomplete-alt',
+    'ui.bootstrap.datetimepicker'
   ])
   .config(function ($routeProvider) {
     $routeProvider

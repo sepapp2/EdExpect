@@ -1,4 +1,3 @@
-<div class="row">
   <div class="col-lg-4 col-md-4 col-sm-12">
     <div class="form-group">
       <div class="input-group">
@@ -12,11 +11,18 @@
         <select class="form-control" ng-model="searchLocation">
           <option disabled value="">Search Locations</option>
           <option value="">All Locations</option>
-          <option value="Good Samaritan">Good Samaritan</option>
-          <option value="Chandler ED">Chandler ED</option>
+          <option value="GS Emergency Department">Good Samaritan</option>
+          <option value="PCF-Emergency Department">Chandler ED</option>
         </select>
       </div>
-    </div>
+  </div>
+  <div class="col-lg-2 col-md-4 col-sm-12">
+      <div class="form-group">
+        <div class="checkbox">
+          <label><input type="checkbox" value="Inactive" ng-model="searchInactive" ng-click="getExpectedPatients(searchInactive)">Show Inactive</label>
+        </div>
+      </div>
+  </div>
   <div class="col-lg-2 col-md-4 col-sm-12 pull-right">
     <button type="button" class="btn btn-success btn-lg pull-right" data-toggle="modal" data-target="#editPatientModal" ng-click="newPatient()">Add New Patient
     </button>
@@ -24,7 +30,7 @@
 </div>
 <div class="row">
   <div class="col-lg-12">
-<table class="table table-hover table-bordered table-striped table-responsive">
+<table class="table table-bordered table-striped table-responsive">
   <th>
     Name
   </th>
@@ -50,21 +56,24 @@
     Comments
   </th>
   <th></th>
-  <tr ng-repeat="patient in expectedPatients | orderBy:'Name' | filter:searchExpected | filter:searchLocation | filter:patient.Active track by $index">
+  <th></th>
+  <tr ng-repeat="patient in expectedPatients | orderBy:'Name' | filter:searchExpected | filter:searchLocation track by $index">
     <td>{{ patient.Name }}</td>
     <td>{{ patient.DOB | date:'shortDate'}}</td>
     <td>{{ patient.ArrivalFrom }}</td>
     <td>{{ patient.ExpectedDtm  | date:'short'}}</td>
     <td>{{ patient.ChiefComplaint}}</td>
     <td>{{ patient.PCP}}</td>
-    <td>{{ patient.LocationId}}</td>
+    <td>{{ patient.Location.Name}}</td>
     <td>{{ patient.Comment}}</td>
     <td class="edit-column">
-      <!-- <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#editPatientModal" ng-click="editPatient(patient)">
-          Edit
-      </button> -->
       <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#editPatientModal" ng-click="editPatient(patient)">
         <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+      </button>
+    </td>
+    <td class="edit-column">
+      <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#arrivePatientModal" ng-click="editPatient(patient)">
+        <span class="glyphicon glyphicon-import" aria-hidden="true"></span>
       </button>
     </td>
   </tr>
@@ -78,7 +87,26 @@
   </div>
 </div>
 
+
 <!-- Modal -->
+<div class="modal fade" id="arrivePatientModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Arrival of {{openPatient.Name}}</h4>
+      </div>
+      <div class="modal-body">
+        {{openPatient.Name}} arrived at {{ArrivalDtm | date:'MM/dd/yyyy @ h:mma'}}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="arrivedPatient(patient)">Mark Arrived</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!--Edit Patient Modal -->
 <div class="modal fade" id="editPatientModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
@@ -94,128 +122,23 @@
               <div class="col-lg-12 form-row">
                 <div class="form-inline">
                   <div class="form-group">
-                    <label for="callStartDate">Date</label>
-                    <input type="date" class="form-control" id="callStartDate" ng-model="localPatient.CallStartDate">
-                  </div>
-                  <div class="form-group">
-                    <label for="callStartTime">Start Time</label>
-                    <input type="time" class="form-control" id="callStartTime" ng-model="localPatient.CallStartTime">
-                  </div>
-                  <div class="form-group">
-                    <label for="callEndDate">End Date</label>
-                    <input type="date" class="form-control" id="callEndDate" ng-model="localPatient.CallEndDate">
-                  </div>
-                  <div class="form-group">
-                    <label for="callEndTime">End Time</label>
-                    <input type="time" class="form-control" id="callEndTime" ng-model="localPatient.CallEndTime">
-                  </div>
-                  <div class="form-group">
-                    <label for="callType">Type</label>
-                    <select class="form-control" id="callType" ng-model="openPatient.Type">
-                      <option>Transfer</option>
-                      <option>Something Else</option>
-                      <option>Another Thing</option>
-                      <option>One Last Thing</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="consultType">Consult Type</label>
-                    <select class="form-control" id="consultType" ng-model="openPatient.ConsultType">
-                      <option>Ortho</option>
-                      <option>Neuro</option>
-                      <option>Another Thing</option>
-                      <option>One Last Thing</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="disposition">Disposition</label>
-                    <select class="form-control" id="disposition" ng-model="openPatient.Disposition">
-                      <option>Admit</option>
-                      <option>Something Else</option>
-                      <option>Another Thing</option>
-                      <option>One Last Thing</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-              <div class="row">
-                <div class="col-lg-12 form-row">
-                  <div class="form-inline">
-                    <div class="form-group">
-                      <label for="faceSheet">Face Sheet Requested</label>
-                      <select class="form-control" id="faceSheet" ng-model="openPatient.FaceSheet">
-                        <option>Yes</option>
-                        <option>No</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="faxEKG">Fax EKG's</label>
-                      <select class="form-control" id="faxEKG" ng-model="openPatient.FaxEKG">
-                        <option>Yes</option>
-                        <option>No</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="nurse">RN/Chg Name</label>
-                      <input type="text" class="form-control" id="nurse" ng-model="openPatient.Nurse" >
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-lg-5 form-row">
-                  <div>
-                    <div class="form-group">
-                      <label for="agents">Agent(s)</label>
-                      <tags-input id="agents" ng-model="Agents" replace-spaces-with-dashes="false" placeholder="Add an Agent"></tags-input>
+                    <div class="dropdown">
+                      <a class="dropdown-toggle" id="dropdown1" role="button" data-toggle="dropdown">
+                        <div class="input-group">
+                          <span class="input-group-addon">Call Date</span>
+                          <input type="text" class="form-control calendar-input" data-ng-model="openPatient.CallDtm"><span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
+                        </div>
+                      </a>
+                      <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                        <datetimepicker data-ng-model="openPatient.CallDtm" data-datetimepicker-config="{ dropdownSelector: '#dropdown1' }"/>
+                      </ul>
                     </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="panel panel-primary">
-          <div class="panel-heading">Referring Information</div>
-          <div class="panel-body">
-            <div class="row">
-              <div class="col-lg-12 form-row">
-                <div class="form-inline">
                   <div class="form-group">
-                    <label for="referringName">Name</label>
-                    <input type="text" id="referringName" class="form-control" ng-model="openPatient.ReferringName" >
-                  </div>
-                  <div class="form-group">
-                    <label for="referringCity">City</label>
-                    <input type="text" id="referringCity" class="form-control" ng-model="openPatient.ReferringCity" >
-                  </div>
-                  <div class="form-group ng-class:phoneError;">
-                    <label for="referringPhone">Phone</label>
-                    <input type="text" id="referringPhone" class="form-control" ng-blur="phoneValidation($event.target.value)" ng-model="openPatient.ReferringPhone" >
-                    <span class="ng-class:phoneFeedback;"></span>
-                  </div>
-                  <div class="form-group">
-                    <label for="referringHospital">Hospital</label>
-                    <input type="text" id="referringHospital" class="form-control" ng-model="openPatient.ReferringHospital" >
+                    <label for="transferReason">Medical Reason for Transfer</label>
+                    <input type="text" class="form-control" id="transferReason" ng-model="openPatient.Reason" >
                   </div>
                 </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-lg-12 form-row">
-                <label>Referring Expectation</label>
-                <label class="checkbox-inline">
-                  <input type="checkbox" id="referringExpectations1" value="Admission" ng-true-value="'Admission'" ng-false-value="null" ng-model="openPatient.ReferringExpectations[0]"> Admission
-                </label>
-                <label class="checkbox-inline">
-                  <input type="checkbox" id="referringExpectations2" value="Work-Up" ng-true-value="'Work-Up'" ng-false-value="null" ng-model="openPatient.ReferringExpectations[1]"> Work-Up
-                </label>
-                <label class="checkbox-inline">
-                  <input type="checkbox" id="referringExpectations3" value="UK Physician/Clinic" ng-true-value="'UK Physician/Clinic'" ng-false-value="null" ng-model="openPatient.ReferringExpectations[2]"> UK Physician/Clinic
-                </label>
-                <label class="checkbox-inline">
-                  <input type="checkbox" id="referringExpectations4" value="External Referring" ng-true-value="'External Referring'" ng-false-value="null" ng-model="openPatient.ReferringExpectations[3]"> External Referring
-                </label>
               </div>
             </div>
           </div>
@@ -231,12 +154,17 @@
                     <input type="text" class="form-control" id="patientName" ng-model="openPatient.Name" >
                   </div>
                   <div class="form-group">
-                    <label for="patientDOB">DOB</label>
-                    <input type="date" class="form-control" id="patientDOB" ng-blur="calculateAge()" ng-model="localPatient.DOB">
-                  </div>
-                  <div class="form-group">
-                    <label for="patientPCP">PCP</label>
-                    <input type="text" class="form-control" id="patientPCP" ng-model="openPatient.PCP" >
+                    <div class="dropdown">
+                      <a class="dropdown-toggle" id="dropdown5" role="button" data-toggle="dropdown">
+                        <div class="input-group">
+                          <span class="input-group-addon">DOB</span>
+                          <input type="text" class="form-control calendar-input" data-ng-model="localPatient.DOB"><span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
+                        </div>
+                      </a>
+                      <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                        <datetimepicker data-ng-model="localPatient.DOB" data-on-set-time="calculateAge()" data-datetimepicker-config="{ dropdownSelector: '#dropdown5', startView:'day', minView:'day' }"/>
+                      </ul>
+                    </div>
                   </div>
                   <div class="form-group">
                     <label for="patientAge">Age</label>
@@ -247,42 +175,60 @@
                       <select class="form-control" id="patientGender" ng-model="openPatient.GenderId" ng-options="gender.GUID as gender.Code for gender in genderOptions" ></select>
                   </div>
                   <div class="form-group">
-                    <label for="patientInsurance">Insurance</label>
-                    <input type="text" class="form-control" id="patientInsurance" ng-model="openPatient.Insurance" >
+                    <label for="patientPCP">PCP</label>
+                    <input type="text" class="form-control" id="patientPCP" ng-model="openPatient.PCP" >
+                  </div><div class="form-group">
+                    <label for="patientBedType">Current Bed Type</label>
+                    <select class="form-control" id="patientBedType" ng-model="openPatient.BedType">
+                      <option>Inpatient</option>
+                      <option>ER</option>
+                      <option>Clinic/UTC</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel panel-primary">
+          <div class="panel-heading">Referring Information</div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-lg-12 form-row">
+                <div class="form-inline">
+                  <div class="form-group">
+                    <label for="referringName">Name</label>
+                    <input type="text" id="referringName" class="form-control" ng-model="openPatient.ReferringName" >
+                  </div>
+                  <div class="form-group ng-class:phoneError;">
+                    <label for="referringPhone">Phone</label>
+                    <input type="text" id="referringPhone" class="form-control" ng-blur="phoneValidation($event.target.value)" ng-model="openPatient.ReferringPhone" >
+                    <span class="ng-class:phoneFeedback;"></span>
+                  </div>
+                  <div class="form-group">
+                    <label for="referringCity">City</label>
+                    <input type="text" id="referringCity" class="form-control" ng-model="openPatient.ReferringCity" >
+                  </div>
+                  <div class="form-group">
+                    <label for="referringHospital">Hospital</label>
+                    <input type="text" id="referringHospital" class="form-control" ng-model="openPatient.ReferringHospital" >
                   </div>
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col-lg-12 form-row">
-                <div class="form-inline">
-                  <div class="form-group">
-                    <label for="patientTravel">Traveled Abroad</label>
-                    <select class="form-control" id="patientTravel" ng-model="openPatient.TraveledAbroad">
-                      <option value=true ng-selected="openPatient.TraveledAbroad===true">Yes</option>
-                      <option value=false ng-selected="openPatient.TraveledAbroad===false">No</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="patientInfection">Nonsocomial Infection</label>
-                    <select class="form-control" id="patientInfection" ng-model="openPatient.NosocomialInfection">
-                      <option value=true ng-selected="openPatient.NosocomialInfection===true">Yes</option>
-                      <option value=false ng-selected="openPatient.NosocomialInfection===false">No</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="patientCode">Code</label>
-                    <input type="text" class="form-control" id="patientCode" ng-model="openPatient.Resuscitation" >
-                  </div>
-                  <div class="form-group">
-                    <label for="patientLocation">Location</label>
-                      <select class="form-control" id="patientLocation" ng-model="openPatient.LocationId" ng-options="location.GUID as location.Name for location in locationOptions" ></select>
-                  </div>
-                  <div class="form-group">
-                    <label for="bedType">Bed Type</label>
-                    <input type="text" class="form-control" id="bedType" ng-model="openPatient.BedType" >
-                  </div>
-                </div>
+                <label>Referring Expectation</label>
+                <label class="checkbox-inline" ng-repeat="expectationName in ReferringExpectations">
+                  <input
+                    type="checkbox"
+                    name="selectedExpectations[]"
+                    value="{{expectationName}}"
+                    ng-checked="openPatient.ReferringExpectations.indexOf(expectationName) > -1"
+                    ng-click="toggleSelection(expectationName)"
+                  > {{expectationName}}
+                </label>
               </div>
             </div>
           </div>
@@ -296,14 +242,12 @@
                     <div class="form-group">
                       <label for="ukTransport">Mode of Transport</label>
                       <select class="form-control" id="ukTransport" ng-model="openPatient.Transport">
-                        <option>Ambulance</option>
-                        <option>Helicopter</option>
+                        <option>Ground</option>
+                        <option>Air</option>
+                        <option>Private Vehicle</option>
+                        <option>Other</option>
                       </select>
                     </div>
-                    <!-- <div class="form-group">
-                      <label for="ukAcceptingMD">Accepting MD</label>
-                        <select class="form-control" id="ukAcceptingMD" ng-model="openPatient.AcceptingProviderId" ng-options="provider.GUID as provider.DisplayName for provider in careProviderOptions" ></select>
-                    </div> -->
                     <label for="ukAcceptingMD">Accepting MD</label>
                     <div class="form-group">
                       <div angucomplete-alt id="ex1"
@@ -320,16 +264,21 @@
                         initial-value="providerSelectedInitial"></div>
                     </div>
                     <div class="form-group">
-                      <label for="ukETA">Expected Arrival</label>
-                      <input type="datetime-local" class="form-control" id="ukETA" ng-model="openPatient.ExpectedDtm" >
-                    </div>
+                      <div class="dropdown">
+                        <a class="dropdown-toggle" id="dropdown2" role="button" data-toggle="dropdown">
+                          <div class="input-group">
+                            <span class="input-group-addon">Expected Arrival</span>
+                            <input type="text" class="form-control calendar-input" data-ng-model="openPatient.ExpectedDtm"><span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
+                          </div>
+                        </a>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                          <datetimepicker data-ng-model="openPatient.ExpectedDtm" data-datetimepicker-config="{ dropdownSelector: '#dropdown2' }"/>
+                        </ul>
+                      </div>
+                  </div>
                     <div class="form-group">
-                      <label for="ukArrivalTime">Arrival Time</label>
-                      <input type="datetime-local" class="form-control" id="ukArrivalTime" ng-model="openPatient.ArrivalDtm" >
-                    </div>
-                    <div class="form-group">
-                      <label for="visitID">Visit ID</label>
-                      <input type="text" class="form-control" id="visitID" ng-model="openPatient.VisitIDCode" ng-blur="visitID()">
+                      <label for="ukLocation">ED Room Number</label>
+                        <select class="form-control" id="patientLocation" ng-model="openPatient.LocationId" ng-options="location.GUID as location.Name for location in locationOptions" ></select>
                     </div>
                   </div>
                 </div>
@@ -338,16 +287,31 @@
                 <div class="col-lg-12 form-row">
                   <div class="form-inline">
                     <div class="form-group">
-                      <label for="ukLocation">ED Room Number</label>
-                        <select class="form-control" id="patientLocation" ng-model="openPatient.EDLocationId" ng-options="location.GUID as location.Name for location in locationOptions" ></select>
+                      <label for="visitMRN">MRN</label>
+                      <input type="text" class="form-control" id="visitMRN" ng-model="localPatient.MRN" ng-change="visitID()">
                     </div>
+                    <span class="label" ng-class="{'label-success': localPatient.MRNMatch, 'label-danger': !localPatient.MRNMatch}">{{localPatient.MRNMatch ? 'Successfully Validated' : 'Requires Validation'}}</span>
                     <div class="form-group">
-                      <label for="bedType">Bed Type</label>
-                      <input type="text" class="form-control" id="bedType" ng-model="openPatient.BedType" >
+                      <label for="visitID">Visit ID</label>
+                      <input type="text" class="form-control" id="visitID" ng-model="localPatient.VisitId" ng-change="visitID()">
                     </div>
+                    <span class="label" ng-class="{'label-success': localPatient.VisitIDMatch, 'label-danger': !localPatient.VisitIDMatch}">{{localPatient.VisitIDMatch ? 'Successfully Validated' : 'Requires Validation'}}</span>
                     <div class="form-group">
                       <label for="ukComments">Comments</label>
                       <input type="text" class="form-control" id="ukComments" ng-model="openPatient.Comment" >
+                    </div>
+                    <div class="form-group">
+                      <div class="dropdown">
+                        <a class="dropdown-toggle" id="dropdown3" role="button" data-toggle="dropdown">
+                          <div class="input-group">
+                            <span class="input-group-addon">Arrival Time</span>
+                            <input type="text" class="form-control calendar-input" data-ng-model="openPatient.ArrivalDtm"><span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
+                          </div>
+                        </a>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                          <datetimepicker data-ng-model="openPatient.ArrivalDtm" data-datetimepicker-config="{ dropdownSelector: '#dropdown3' }"/>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -365,13 +329,28 @@
                         <input type="text" class="form-control" id="chiefComplaint" ng-model="openPatient.ChiefComplaint">
                     </div>
                     <div class="form-group">
-                      <label for="reportTime">Report Time</label>
-                      <input type="datetime-local" class="form-control" id="reportTime" ng-model="openPatient.ReportDtm" >
+                      <div class="dropdown">
+                        <a class="dropdown-toggle" id="dropdown4" role="button" data-toggle="dropdown">
+                          <div class="input-group">
+                            <span class="input-group-addon">Report Time</span>
+                            <input type="text" class="form-control calendar-input" data-ng-model="openPatient.ReportDtm"><span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
+                          </div>
+                        </a>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                          <datetimepicker data-ng-model="openPatient.ReportDtm" data-datetimepicker-config="{ dropdownSelector: '#dropdown4' }"/>
+                        </ul>
+                      </div>
                     </div>
                     <div class="form-group">
                       <label for="heartRate">HR</label>
                       <input type="number" class="form-control" id="heartRate" ng-model="openPatient.HeartRate" min="0">
                     </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-12 form-row">
+                  <div class="form-inline">
                     <div class="form-group">
                       <label for="systolicBP">BP</label>
                       <div class="input-group">
@@ -384,12 +363,6 @@
                       <label for="respiratoryRate">RR</label>
                       <input type="number" class="form-control" id="respiratoryRate" ng-model="openPatient.RespiratoryRate" min="0">
                     </div>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-lg-12 form-row">
-                  <div class="form-inline">
                     <div class="form-group">
                       <label for="TemperatureF">Temp</label>
                       <div class="input-group">
@@ -400,6 +373,32 @@
                   <div class="form-group">
                     <label for="OxygenSaturation">SaO2</label>
                     <input type="number" class="form-control" id="OxygenSaturation" ng-model="openPatient.OxygenSaturation" min="0">
+                  </div>
+                  <div class="form-group">
+                    <label for="GCS">GCS</label>
+                    <input type="text" class="form-control" id="GCS" ng-model="openPatient.GlasgowComaScale">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-12 form-row">
+                <div class="form-inline">
+                  <div class="form-group">
+                    <label for="allergies">Allergies</label>
+                    <input type="text" class="form-control" id="allergies" ng-model="openPatient.Allergy">
+                  </div>
+                  <div class="form-group">
+                    <label for="medications">Medications Given</label>
+                    <input type="text" class="form-control" id="medications" ng-model="openPatient.Medication">
+                  </div>
+                  <div class="form-group">
+                    <label for="access">Access</label>
+                    <input type="text" class="form-control" id="access" ng-model="openPatient.Access">
+                  </div>
+                  <div class="form-group">
+                    <label for="IntakeOutput">I&O</label>
+                    <input type="text" class="form-control" id="IntakeOutput" ng-model="openPatient.IntakeOutput">
                   </div>
                 </div>
               </div>
@@ -417,7 +416,7 @@
           </div>
         </div>
         <div class="panel panel-primary">
-          <div class="panel-heading">Patient Information</div>
+          <div class="panel-heading">Provider Report</div>
           <div class="panel-body">
             <div class="row">
               <div class="col-lg-12 form-row">
@@ -434,8 +433,8 @@
         <pre>{{openPatient | json}}</pre>
       </div>
       <div class="modal-footer">
-        <button type="button" ng-hide="editing===false" class="btn btn-danger pull-left" ng-click="deletePatient(openPatient)" data-dismiss="modal">Patient No Longer Active</button>
-        <button type="button" class="btn btn-success" ng-show="openPatient.ChartGUID != 0 && openPatient.ClientGUID !=0 && openPatient.VisitGUID !=0" ng-click="sendSCM(openPatient)">Send to SCM</button>
+        <button type="button" ng-hide="editing===false" class="btn pull-left" ng-class="{'btn-danger': openPatient.Active, 'btn-success': !openPatient.Active}" ng-click="togglePatient(openPatient)" data-dismiss="modal">{{openPatient.Active ? 'Patient No Longer Active' : 'Mark Patient as Active'}}</button>
+        <button type="button" class="btn btn-success" ng-show="(openPatient.VisitId != 0 && openPatient.VisitId != null) && (openPatient.ClientId !=0 && openPatient.ClientId != null)" ng-click="sendSCM(openPatient)">Send to SCM</button>
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
         <button type="button" class="btn btn-primary" ng-click="savePatient(openPatient)" data-dismiss="modal">Save changes</button>
       </div>

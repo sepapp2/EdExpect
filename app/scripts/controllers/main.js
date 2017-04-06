@@ -9,8 +9,8 @@
  */
 angular.module('edExpectApp')
   .controller('MainCtrl', function ($scope, $http, $filter, $location) {
+//Set url of api calls
     $scope.baseURL = '//'+ $location.host() +'/api/';
-
     $http.get($scope.baseURL + 'Genders')
       .then(function(response) {
           $scope.genderOptions = response.data.value;
@@ -24,12 +24,7 @@ angular.module('edExpectApp')
           $http.get($scope.baseURL + 'CareProviders?$filter=TypeCode%20eq%20%27Physician%27')
             .then(function(response) {
                 $scope.careProviderOptions = response.data.value;
-                $http.get($scope.baseURL + 'ExpectedPatients')
-                  .then(function(response) {
-                      $scope.expectedPatients = response.data.value;
-                    }, function errorCallback(response) {
-                      alert("Error Fetching Data, please reload page.")
-                  });
+                  $scope.getExpectedPatients();
                 }, function errorCallback(response) {
                   alert("Error Fetching Data, please reload page.")
             });
@@ -38,79 +33,12 @@ angular.module('edExpectApp')
         $scope.editing = false;
         $scope.openPatient = {
               "Name": null,
-              "ClientGUID": 0,
-              "ChartGUID": 0,
-              "VisitGUID": 0
+              "ReferringExpectations": [],
         }
-          // $scope.openPatient = {
-          //   "Active": true,
-          //   "Name": null,
-          //   "PCP": null,
-          //   "DOB": null,
-          //   "Age": 0,
-          //   "LocationId": null,
-          //   "BedType": null,
-          //   "GenderId": null,
-          //   "Insurance": null,
-          //   "Resuscitation": null,
-          //   "ChiefComplaint": null,
-          //   "ReportDate": null,
-          //   "ReportTime": null,
-          //   "HeartRate": null,
-          //   "RespiratoryRate": null,
-          //   "SystolicPressure": null,
-          //   "DiastolicPressure": null,
-          //   "TemperatureC": null,
-          //   "TemperatureF": null,
-          //   "OxygenSaturation": null,
-          //   "NurseReport": null,
-          //   "Transport": null,
-          //   "AcceptingProviderId": null,
-          //   "EDLocationId": null,
-          //   "ExpectedDate": null,
-          //   "ExpectedTime": null,
-          //   "ArrivalFrom": null,
-          //   "ArrivalDate": null,
-          //   "ArrivalTime": null,
-          //   "NoShow": false,
-          //   "CallStartDate": null,
-          //   "CallStartTime": null,
-          //   "CallEndDate": null,
-          //   "CallEndTime": null,
-          //   "Disposition": null,
-          //   "TraveledAbroad": false,
-          //   "NosocomialInfection": null,
-          //   "EKG": null,
-          //   "Type": null,
-          //   "ConsultType": null,
-          //   "Nurse": null,
-          //   "Agents": [],
-          //   "ReferringName": null,
-          //   "ReferringCity": null,
-          //   "ReferringPhone": null,
-          //   "ReferringHospital": null,
-          //   "ReferringExpectations": [],
-          //   "Comment": null,
-          //   "Summary": null,
-          //   "IDCode": null,
-          //   "VisitIDCode": null,
-          //   "CallStartDtm": null,
-          //   "CallEndDtm": null,
-          //   "ReportDtm": null,
-          //   "ArrivalDtm": null,
-          //   "ExpectedDtm": null
-          // }
+        $scope.openPatient.CallDtm = new Date();
 
-          //Set local scopes
-          $scope.localPatient = [];
-          $scope.Agents = [];
-
-
-          // $scope.localPatient.CallStartDate = new Date();
-          // $scope.localPatient.CallStartTime = new Date();
-          // $scope.localPatient.CallEndDate = new Date();
-          // $scope.localPatient.CallEndTime = new Date();
-          // $scope.localPatient.DOB = new Date();
+        //Set local scopes
+        $scope.localPatient = [];
       };
       $scope.editPatient = function (patient) {
 
@@ -120,26 +48,42 @@ angular.module('edExpectApp')
 
         //Set local scopes
         $scope.localPatient = [];
-        $scope.Agents = [];
+        //Set arrivaldtm
+        $scope.ArrivalDtm = new Date();
+        $scope.localPatient.MRNMatch = false;
+        $scope.localPatient.VisitIDMatch = false;
         //Seperate out datetime into date and time objects
-        $scope.localPatient.CallStartDate = new Date($scope.openPatient.CallStartDtm);
-        $scope.localPatient.CallStartTime = new Date($scope.openPatient.CallStartDtm);
-        $scope.localPatient.CallEndDate = new Date($scope.openPatient.CallEndDtm);
-        $scope.localPatient.CallEndTime = new Date($scope.openPatient.CallEndDtm);
+        $scope.openPatient.CallDtm = new Date($scope.openPatient.CallDtm);
         $scope.openPatient.ExpectedDtm = new Date($scope.openPatient.ExpectedDtm);
         $scope.openPatient.ArrivalDtm = new Date($scope.openPatient.ArrivalDtm);
         $scope.openPatient.ReportDtm = new Date($scope.openPatient.ReportDtm);
-        //Iterate over agents and load into local agent scope tagging box
-        angular.forEach($scope.openPatient.Agents, function(value){
-          $scope.Agents.push(value);
-        });
 
         //Set Patient DOB to Date objects
         $scope.localPatient.DOB = new Date($scope.openPatient.DOB);
 
+        //check if existing clientId and VisitID
+        if ($scope.openPatient.ClientId !== null && $scope.openPatient.VisitId !== null){
+          $http.get($scope.baseURL + "Visits?$filter=ClientGUID%20eq%20" + $scope.openPatient.ClientId + " and VisitGUID%20eq%20" + $scope.openPatient.VisitId)
+            .then(function(response) {
+              if(response.data.value.length > 0){
+              $scope.localPatient.MRN = response.data.value[0].IDCode;
+              $scope.localPatient.VisitId = response.data.value[0].VisitIDCode;
+              $scope.visitID();
+            }
+            }, function errorCallback(response) {
+              alert("Error Checking Visit Codes, please try again.")
+            });
+        }
+        $http.get($scope.baseURL + 'ExpectedPatients?$expand=Visit&filter=Active%20eq%20true%20and%20Id%20eq%20'+ $scope.openPatient.Id)
+        .then(function(response) {
+        }, function errorCallback(response) {
+          alert("Error Fetching Data, please reload page.")
+      });
         $http.get($scope.baseURL + 'CareProviders?$filter=GUID%20eq%20' + $scope.openPatient.AcceptingProviderId)
           .then(function(response) {
-            $scope.providerSelectedInitial = response.data.value[0].ProviderDisplayName;
+            if(response.data.value.length > 0){
+              $scope.providerSelectedInitial = response.data.value[0].ProviderDisplayName;
+            }
           }, function errorCallback(response) {
             alert("Error Fetching Data, please reload page.")
         });
@@ -151,44 +95,14 @@ angular.module('edExpectApp')
             $scope.openPatient.AcceptingProviderId = null;
           }
         }
-        //$scope.openPatient.CallStartDate = new Date($scope.openPatient.CallStartDate);
-        //$scope.openPatient.CallEndDate = new Date($scope.openPatient.CallEndDate);
-            // $scope.openPatient.CallStartTime = $scope.openPatient.CallStartTime.split(':');
-            // $scope.openPatient.CallStartTime = new Date(1970, 0, 0, $scope.openPatient.CallStartTime[0], $scope.openPatient.CallStartTime[1], $scope.openPatient.CallStartTime[2]);
-            // $scope.openPatient.CallEndTime = $scope.openPatient.CallEndTime.split(':');
-            // $scope.openPatient.CallEndTime = new Date(1970, 0, 0, $scope.openPatient.CallEndTime[0], $scope.openPatient.CallEndTime[1], $scope.openPatient.CallEndTime[2]);
       };
       $scope.savePatient = function (patient) {
-        // $scope.openPatient.CallStartTime = $scope.openPatient.CallStartTime.getHours() +":"+ $scope.openPatient.CallStartTime.getMinutes() +":"+$scope.openPatient.CallStartTime.getSeconds();
-        // $scope.openPatient.CallEndTime = $scope.openPatient.CallEndTime.getHours() +":"+ $scope.openPatient.CallEndTime.getMinutes() +":"+$scope.openPatient.CallEndTime.getSeconds();
-        //Set Datetime to correct format
-        $scope.openPatient.CallStartDtm = $filter('date')($scope.localPatient.CallStartDate, "yyyy-MM-ddT")+$filter('date')($scope.localPatient.CallStartTime, "HH:mm:ss-05:00");
-        $scope.openPatient.CallEndDtm = $filter('date')($scope.localPatient.CallEndDate, "yyyy-MM-ddT")+$filter('date')($scope.localPatient.CallEndTime, "HH:mm:ss-05:00");
-        $scope.openPatient.ExpectedDtm = $filter('date')($scope.openPatient.ExpectedDtm, "yyyy-MM-ddT")+$filter('date')($scope.openPatient.ExpectedDtm, "HH:mm:ss-05:00");
-        $scope.openPatient.ArrivalDtm = $filter('date')($scope.openPatient.ArrivalDtm, "yyyy-MM-ddT")+$filter('date')($scope.openPatient.ArrivalDtm, "HH:mm:ss-05:00");
         $scope.openPatient.ReportDtm = $filter('date')($scope.openPatient.ReportDtm, "yyyy-MM-ddT")+$filter('date')($scope.openPatient.ReportDtm, "HH:mm:ss-05:00");
         $scope.openPatient.DOB = $filter('date')($scope.localPatient.DOB, "yyyy-MM-dd")
-        //clear out existing agents array and push local values
-        $scope.openPatient.Agents = [];
-        angular.forEach($scope.Agents, function(value){
-          $scope.openPatient.Agents.push(value.text);
-        });
-        //$scope.openPatient.CallStartDtm = new Date($scope.openPatient.CallStartDtm);
-        //$scope.openPatient.CallStartDate.format('yyyy-mm-dd');
-        // $scope.patientID = "";
-        // $scope.patientID = $scope.openPatient.Id;
-        // delete $scope.openPatient.Id;
-        // $scope.openPatient.Agents = $scope.openPatient.Agents.text;
-        // console.log($scope.openPatient.Agents);
         if ($scope.editing ===false){
           $http.post($scope.baseURL + 'ExpectedPatients',  $scope.openPatient)
             .then(function(response) {
-              $http.get($scope.baseURL + 'ExpectedPatients')
-                .then(function(response) {
-                    $scope.expectedPatients = response.data.value;
-                  }, function errorCallback(response) {
-                    alert("Error Posting Data, please try again.")
-                });
+                $scope.getExpectedPatients();
               }, function errorCallback(response) {
                 alert("Error Posting Data, please try again.")
           });
@@ -196,32 +110,73 @@ angular.module('edExpectApp')
         else {
         //pull in which patient was edited
         $scope.expectedPatients[$scope.editing] = $scope.openPatient;
+        console.log($scope.expectedPatients[$scope.editing]);
+        delete $scope.openPatient.Location;
         //Save updated record
         $http.put($scope.baseURL + 'ExpectedPatients/' + $scope.openPatient.Id,  $scope.openPatient)
           .then(function(response) {
+            $scope.getExpectedPatients();
           }, function errorCallback(response) {
             alert("Error Posting Data, please try again.")
         });
        };
      };
 
-     $scope.deletePatient = function(patient){
+     //Toggle if Patient is Active
+     $scope.togglePatient = function(patient){
        $scope.expectedPatients[$scope.editing] = $scope.openPatient;
-       $scope.openPatient.Active = false;
-       $http.patch($scope.baseURL + 'ExpectedPatients/' + $scope.openPatient.Id, $scope.openPatient)
-         .then(function(response) {
-           $http.get($scope.baseURL + 'ExpectedPatients')
-             .then(function(response) {
-                 $scope.expectedPatients = response.data.value;
-               }, function errorCallback(response) {
-                 alert("Error Posting Data, please try again.")
-             });
-           }, function errorCallback(response) {
-             alert("Error Posting Data, please try again.")
-         });
+       delete $scope.openPatient.Location;
+       if ($scope.openPatient.Active == true){
+         $scope.openPatient.Active = false;
+         $http.patch($scope.baseURL + 'ExpectedPatients/' + $scope.openPatient.Id, $scope.openPatient)
+           .then(function(response) {
+              $scope.getExpectedPatients();
+             }, function errorCallback(response) {
+               alert("Error Posting Data, please try again.")
+           });
+       } else {
+         $scope.expectedPatients[$scope.editing] = $scope.openPatient;
+         $scope.openPatient.Active = true;
+         $http.patch($scope.baseURL + 'ExpectedPatients/' + $scope.openPatient.Id, $scope.openPatient)
+           .then(function(response) {
+              $scope.getExpectedPatients();
+             }, function errorCallback(response) {
+               alert("Error Posting Data, please try again.")
+           });
+       }
      }
+      //Mark Patient as arrived and save dateTimeFilter
+      $scope.arrivedPatient = function(patient){
+        $scope.openPatient.ArrivalDtm = $scope.ArrivalDtm;
+        $scope.openPatient.Active = false;
+        delete $scope.openPatient.Location;
+        $http.patch($scope.baseURL + 'ExpectedPatients/' + $scope.openPatient.Id, $scope.openPatient)
+          .then(function(response) {
+              $scope.getExpectedPatients();
+            }, function errorCallback(response) {
+              alert("Error Posting Data, please try again.")
+          })
+      }
+
       //set search filter at top of page to blank
       $scope.searchExpected   = '';     // set the default search/filter term
+
+      //ReferringExpectations function
+      $scope.ReferringExpectations = ['Admission', 'Work-Up', 'UK Physician/Clinic', 'External Referring'];
+      // Toggle selection for a given Expectation
+      $scope.toggleSelection = function toggleSelection(expectationName) {
+        var idx = $scope.openPatient.ReferringExpectations.indexOf(expectationName);
+
+        // Is currently selected
+        if (idx > -1) {
+          $scope.openPatient.ReferringExpectations.splice(idx, 1);
+        }
+
+        // Is newly selected
+        else {
+          $scope.openPatient.ReferringExpectations.push(expectationName);
+        }
+      };
 
       //Phone Validation
       $scope.phoneValidation = function (value) {
@@ -241,22 +196,58 @@ angular.module('edExpectApp')
         var ageDifMs = Date.now() - $scope.localPatient.DOB.getTime();
         var ageDate = new Date(ageDifMs); // miliseconds from epoch
          $scope.openPatient.Age = (Math.abs(ageDate.getUTCFullYear() - 1970));
+         $scope.formatDOB();
       }
 
-      //Function to check visitIDCode and return back matching GUIDs
-      $scope.visitID = function visitID() { // birthday is a date
-        $http.get($scope.baseURL + "Visits?$filter=VisitIDCode%20eq%20'" + $scope.openPatient.VisitIDCode + "'")
+      //Setting DOB to simple format
+      $scope.formatDOB = function formatDOB (){
+         $scope.openPatient.DOB = $filter('date')($scope.localPatient.DOB, "yyyy-MM-dd")
+      }
+
+      //Function to check visitIDCode, Client ID, name and DOB and return back matching GUIDs
+      $scope.visitID = function visitID() {
+        //Check if MRN Correct
+        $http.get($scope.baseURL + "Visits?$filter=IDCode%20eq%20'" + $scope.localPatient.MRN + "'")
           .then(function(response) {
-            if(response.data.value.length < 1){
-               alert("No matching visit found.");
-               $scope.openPatient.ChartGUID = 0;
-               $scope.openPatient.VisitGUID = 0;
-               $scope.openPatient.ClientGUID = 0;
+            if(response.data.value.length > 0){
+              $scope.localPatient.MRNMatch = true;
             }
             else {
-              $scope.openPatient.ChartGUID = response.data.value[0].ChartGUID;
-              $scope.openPatient.VisitGUID = response.data.value[0].GUID;
-              $scope.openPatient.ClientGUID = response.data.value[0].ClientGUID;
+              $scope.localPatient.MRNMatch = false;
+            };
+          }, function errorCallback(response) {
+            alert("Error Posting Data, please try again.")
+        });
+
+        //Check if Visit ID correct
+        $http.get($scope.baseURL + "Visits?$filter=VisitIDCode%20eq%20'" + $scope.localPatient.VisitId + "'")
+          .then(function(response) {
+            if(response.data.value.length > 0){
+              $scope.localPatient.VisitIDMatch = true;
+            }
+            else {
+              $scope.localPatient.VisitIDMatch = false;
+            };
+          }, function errorCallback(response) {
+            alert("Error Posting Data, please try again.")
+        });
+
+        //Check if MRN and Visit ID are correct
+        $http.get($scope.baseURL + "Visits?$filter=IDCode%20eq%20'" + $scope.localPatient.MRN + "' and VisitIDCode%20eq%20'" + $scope.localPatient.VisitId + "'")
+          .then(function(response) {
+            if(response.data.value.length < 1){
+               $scope.openPatient.ClientId = 0;
+               $scope.openPatient.VisitId = 0;
+            }
+            else {
+              $http.get($scope.baseURL + "ExpectedPatients?$filter=ClientId%20eq%20" + $scope.openPatient.VisitId + " and VisitId%20eq%20" + $scope.openPatient.VisitId)
+                .then(function(responseExisting) {
+                  alert("A record has already been sent to SCM.  Choosing to send this record to SCM will overwrite any existing data.")
+                  $scope.openPatient.ClientId = response.data.value[0].ClientGUID;
+                  $scope.openPatient.VisitId = response.data.value[0].VisitGUID;
+                }, function errorCallback(response) {
+                  alert("Error Checking Visit Codes, please try again.")
+                });
             }
           }, function errorCallback(response) {
             alert("Error Checking Visit Codes, please try again.")
@@ -272,12 +263,23 @@ angular.module('edExpectApp')
                   alert("Error Sending to SCM, please try again.")
             });
       }
-    //   $scope.countrySelected = function(selected) {
-    //     if (selected) {
-    //       alert("hello");
-    //       //window.alert('You have selected ' + selected.title);
-    //     } else {
-    //       console.log('cleared');
-    //     }
-    //   };
+
+      //Refresh Expected Patients
+      $scope.getExpectedPatients = function(searchInactive){
+        if ($scope.searchInactive === true){
+          $http.get($scope.baseURL + 'ExpectedPatients?$expand=Location&$filter=Active%20eq%20false%20and%20ExpectedDtm%20gt%20' + moment().subtract(6, 'hours').format())
+            .then(function(response) {
+                $scope.expectedPatients = response.data.value;
+              }, function errorCallback(response) {
+                alert("Error Fetching Data, please reload page.")
+            });
+        } else {
+        $http.get($scope.baseURL + 'ExpectedPatients?$expand=Location&$filter=Active%20eq%20true')
+          .then(function(response) {
+              $scope.expectedPatients = response.data.value;
+            }, function errorCallback(response) {
+              alert("Error Posting Data, please try again.")
+          });
+        }
+      }
      });
