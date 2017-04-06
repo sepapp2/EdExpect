@@ -430,7 +430,6 @@
             </div>
           </div>
         </div>
-        <pre>{{openPatient | json}}</pre>
       </div>
       <div class="modal-footer">
         <button type="button" ng-hide="editing===false" class="btn pull-left" ng-class="{'btn-danger': openPatient.Active, 'btn-success': !openPatient.Active}" ng-click="togglePatient(openPatient)" data-dismiss="modal">{{openPatient.Active ? 'Patient No Longer Active' : 'Mark Patient as Active'}}</button>
